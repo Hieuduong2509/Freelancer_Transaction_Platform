@@ -18,7 +18,7 @@ async function loadAllFreelancersByCategory() {
 
     try {
         // Load all freelancers (no limit)
-        const response = await fetch(`${API_BASE}/api/v1/users?limit=100&sort=recent`);
+        const response = await fetch(`${API_BASE}/api/v1/users/?limit=100&sort=recent`);
         if (!response.ok) {
             throw new Error(`Failed to load freelancers: ${response.status} ${response.statusText}`);
         }
@@ -258,7 +258,7 @@ async function loadFavorites() {
     if (!user) return [];
     
     try {
-        const response = await fetch(`${API_BASE}/api/v1/users/${user.id}/favorites`, {
+        const response = await fetch(`${API_BASE}/api/v1/users/${user.id}/favorites/`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -336,7 +336,7 @@ async function toggleFavorite(profileId, freelancerId, buttonElement) {
                 return;
             }
             
-            const response = await fetch(`${API_BASE}/api/v1/users/${user.id}/favorites`, {
+            const response = await fetch(`${API_BASE}/api/v1/users/${user.id}/favorites/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

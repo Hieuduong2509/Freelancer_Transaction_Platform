@@ -1,198 +1,274 @@
-# CodeDesign Marketplace — Hướng dẫn Import, Setup và Chạy hệ thống
+# CodeDesign Marketplace
 
-Nền tảng marketplace dạng microservices cho dịch vụ Code & Design.
+> A cloud-native microservices marketplace platform for Code & Design services.
 
-## 1) Yêu cầu hệ thống
+[![Docker](https://img.shields.io/badge/Docker-required-blue?logo=docker)](https://www.docker.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-microservices-green?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![License](https://img.shields.io/badge/license-MIT-brightgreen)](LICENSE)
 
-- Windows 10/11, PowerShell
-- Docker Desktop (kèm Docker Compose)
-- Git (để clone dự án)
-- Ngrok (đã có sẵn `ngrok.exe` trong thư mục gốc, nếu chưa có vui lòng tải về)
+---
 
-Tùy chọn (chỉ khi cần):
-- Python 3.11+ (nếu muốn chạy server/service đơn lẻ hoặc seed thủ công)
-- Node.js (nếu muốn serve thư mục `frontend/public` mà không dùng Docker/Nginx)
+## Table of Contents
 
-## 2) Import dự án vào máy
+- [Overview](#overview)
+- [System Requirements](#system-requirements)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Running the System](#running-the-system)
+- [Accessing the Platform](#accessing-the-platform)
+- [Seeding Sample Data](#seeding-sample-data)
+- [Serving the Frontend](#serving-the-frontend)
+- [Port Reference](#port-reference)
+- [Troubleshooting](#troubleshooting)
 
-Bạn có thể chọn 1 trong 2 cách:
+---
 
-- Cách 1 (khuyến nghị): Clone repo
-  ```powershell
-  git clone <repository-url>
-  cd <thư_mục_dự_án>
-  ```
+## Overview
 
-- Cách 2: Giải nén folder dự án vào một thư mục trên máy (ví dụ `D:\...`) và mở bằng VS Code/IDE.
+CodeDesign Marketplace is a production-ready microservices platform connecting freelancers and clients for code and design projects. The architecture comprises nine independently deployable FastAPI services, orchestrated via Docker Compose, fronted by an Nginx reverse proxy, and exposed publicly through Ngrok tunneling.
 
-## 3) Cấu trúc thư mục chính
+---
+
+## System Requirements
+
+| Dependency | Notes |
+|---|---|
+| Windows 10 / 11 | PowerShell required |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Must be running before starting the system |
+| Git | For cloning the repository |
+| Ngrok | Place `ngrok.exe` in the project root, or install via Chocolatey |
+
+**Optional** (only needed for standalone service execution or manual seeding):
+
+- Python 3.11+
+- Node.js (for serving the static frontend without Docker)
+
+---
+
+## Project Structure
 
 ```
 .
-├── docker-compose.local.yml     # Compose cho môi trường local
-├── docker-compose.yml           # Compose đầy đủ (tham khảo)
+├── docker-compose.local.yml        # Docker Compose — local environment
+├── docker-compose.yml              # Docker Compose — full reference config
+├── ngrok.exe                       # Ngrok binary (place here if not installed globally)
 ├── nginx/
-│   └── nginx.conf               # Reverse proxy + serve frontend/public
-├── services/                    # Các microservice FastAPI
-│   ├── auth_service/            # Port 8001
-│   ├── user_service/            # Port 8002
-│   ├── project_service/         # Port 8003
-│   ├── search_service/          # Port 8004
-│   ├── payments_service/        # Port 8005
-│   ├── messaging_service/       # Port 8006
-│   ├── notifications_service/   # Port 8007
-│   ├── admin_service/           # Port 8008
-│   └── analytics_service/       # Port 8009
+│   └── nginx.conf                  # Reverse proxy + static frontend serving
+├── services/                       # FastAPI microservices
+│   ├── auth_service/               # Port 8001 — Authentication & authorization
+│   ├── user_service/               # Port 8002 — User profiles & management
+│   ├── project_service/            # Port 8003 — Project listings & contracts
+│   ├── search_service/             # Port 8004 — Search & discovery
+│   ├── payments_service/           # Port 8005 — Payments & billing
+│   ├── messaging_service/          # Port 8006 — Real-time messaging
+│   ├── notifications_service/      # Port 8007 — Push notifications
+│   ├── admin_service/              # Port 8008 — Admin dashboard APIs
+│   └── analytics_service/          # Port 8009 — Analytics & reporting
 ├── frontend/
-│   └── public/                  # Website tĩnh (HTML/CSS/JS)
+│   └── public/                     # Static web client (HTML / CSS / JS)
 │       ├── index.html
 │       ├── css/
 │       └── js/
-└── scripts/                     # Script PowerShell & seed
-    ├── start-all.ps1
-    ├── stop-all.ps1
-    ├── check-status.ps1
-    ├── start-ngrok.ps1
-    ├── setup-ngrok.ps1
-    └── seed_data.ps1
+└── scripts/                        # PowerShell automation scripts
+    ├── start-all.ps1               # Start the full stack
+    ├── stop-all.ps1                # Stop the full stack
+    ├── check-status.ps1            # Health check all services
+    ├── start-ngrok.ps1             # Start Ngrok tunnel
+    ├── setup-ngrok.ps1             # Initial Ngrok configuration
+    └── seed_data.ps1               # Populate sample data
 ```
 
-## 4) Thiết lập lần đầu (một lần duy nhất)
+---
 
-- Cài Docker Desktop và bật lên trước khi chạy hệ thống.
-- Tải `ngrok.exe` về và đặt ở thư mục gốc dự án nếu chưa có.
-  - Có thể chạy: `.\scripts\setup-ngrok.ps1` để khởi chạy ngrok nhanh (tùy chọn).
+## Getting Started
 
-Mặc định các biến môi trường đã có giá trị phù hợp trong `docker-compose.local.yml`, bạn có thể tùy chỉnh sau nếu cần.
+### 1. Clone the Repository
 
-## 5) Chạy toàn bộ hệ thống (Nhanh – khuyến nghị)
+```powershell
+git clone <repository-url>
+cd <project-directory>
+```
 
-Mỗi lần mở máy, chỉ cần một lệnh:
+Alternatively, extract the project archive to a local directory (e.g., `D:\codedesign`) and open it in your IDE.
+
+### 2. Configure Ngrok
+
+Ensure `ngrok.exe` is present in the project root. To perform an initial setup:
+
+```powershell
+.\scripts\setup-ngrok.ps1
+```
+
+> **Note:** Environment variables are pre-configured in `docker-compose.local.yml` with sensible defaults and require no changes for a standard local setup.
+
+---
+
+## Running the System
+
+### Recommended — One Command Startup
 
 ```powershell
 .\scripts\start-all.ps1
 ```
 
-Script sẽ:
-- Khởi động toàn bộ Docker containers (DB, Redis, RabbitMQ, MinIO, các service, Nginx)
-- Mở Ngrok public port 80 (để có URL công khai)
+This script performs the following actions automatically:
 
-Xem trạng thái:
+1. Starts all Docker containers (databases, Redis, RabbitMQ, MinIO, microservices, Nginx)
+2. Opens an Ngrok tunnel on port 80 and prints the public URL
+
+### Check System Status
+
 ```powershell
 .\scripts\check-status.ps1
 ```
 
-Dừng hệ thống:
+### Stop the System
+
 ```powershell
 .\scripts\stop-all.ps1
 ```
 
-Chi tiết thêm xem: `START_SERVER.md`, `QUICK_START.md`.
+---
 
-## 6) Chạy thủ công (Manual)
+### Manual Startup (Advanced)
 
-1) Start Docker containers (local profile):
+**Step 1 — Start Docker containers:**
+
 ```powershell
 docker-compose -f docker-compose.local.yml up -d
 ```
 
-2) Public qua Ngrok (chọn 1 trong 2):
+**Step 2 — Open a public tunnel via Ngrok:**
+
 ```powershell
 .\scripts\start-ngrok.ps1
-```
-hoặc
-```powershell
+# or
 .\ngrok.exe http 80
 ```
 
-3) Kiểm tra:
+**Step 3 — Verify container status:**
+
 ```powershell
 docker-compose -f docker-compose.local.yml ps
 ```
 
-## 7) Truy cập hệ thống
+**Step 4 — View live logs (optional):**
 
-- Frontend (serve bởi Nginx): `http://localhost`
-- Ngrok public URL: hiển thị trong cửa sổ Ngrok (ví dụ `https://xxxx.ngrok.io`)
-- API Docs:
-  - Auth: `http://localhost:8001/docs`
-  - Users: `http://localhost:8002/docs`
-  - Projects: `http://localhost:8003/docs`
-  - Search: `http://localhost:8004/docs`
-  - Payments: `http://localhost:8005/docs`
-  - Messaging: `http://localhost:8006/docs`
-  - Notifications: `http://localhost:8007/docs`
-  - Admin: `http://localhost:8008/docs`
-  - Analytics: `http://localhost:8009/docs`
+```powershell
+docker-compose -f docker-compose.local.yml logs -f
+```
 
-## 8) Seed dữ liệu mẫu (tùy chọn nhưng nên làm)
+> For additional startup options, see [`START_SERVER.md`](START_SERVER.md) and [`QUICK_START.md`](QUICK_START.md).
 
-Sau khi containers đã chạy, bạn có thể seed dữ liệu mẫu:
+---
+
+## Accessing the Platform
+
+| Interface | URL |
+|---|---|
+| **Frontend** (Nginx) | `http://localhost` |
+| **Public URL** (Ngrok) | Displayed in the Ngrok terminal window |
+| Auth API Docs | `http://localhost:8001/docs` |
+| Users API Docs | `http://localhost:8002/docs` |
+| Projects API Docs | `http://localhost:8003/docs` |
+| Search API Docs | `http://localhost:8004/docs` |
+| Payments API Docs | `http://localhost:8005/docs` |
+| Messaging API Docs | `http://localhost:8006/docs` |
+| Notifications API Docs | `http://localhost:8007/docs` |
+| Admin API Docs | `http://localhost:8008/docs` |
+| Analytics API Docs | `http://localhost:8009/docs` |
+
+---
+
+## Seeding Sample Data
+
+After the containers are running, populate the database with sample data:
+
 ```powershell
 .\scripts\seed_data.ps1
 ```
 
-Tài khoản mẫu sau khi seed:
-- Admin: `admin@codedesign.com` / `admin123`
-- Freelancer: `freelancer1@codedesign.com` / `freelancer123`
-- Client: `client1@codedesign.com` / `client123`
+**Default credentials after seeding:**
 
-## 9) Cách “chạy public” (serve thư mục frontend/public)
-
-Bạn có 2 lựa chọn:
-
-- Cách 1 (khuyến nghị): Dùng Nginx trong Docker (tự động khi chạy hệ thống)
-  - Mặc định `frontend/public` được mount vào Nginx và serve tại `http://localhost`.
-
-- Cách 2: Serve thủ công chỉ riêng static frontend (không cần backend)
-  - Dùng Node.js (nếu có):
-    ```powershell
-    cd frontend/public
-    npx serve -l 8080 .
-    ```
-    Mở: `http://localhost:8080`
-  - Hoặc dùng Python:
-    ```powershell
-    cd frontend/public
-    python -m http.server 8080
-    ```
-    Mở: `http://localhost:8080`
-
-Lưu ý: Khi serve thủ công, các API sẽ không chạy nếu bạn chưa start hệ thống bằng Docker. Với frontend này, hầu hết trang sẽ cần API qua Nginx ở `http://localhost`.
-
-## 10) Cổng dịch vụ (tham khảo nhanh)
-
-| Service | Port |
-|---------|------|
-| Nginx (Frontend) | 80 |
-| Auth | 8001 |
-| Users | 8002 |
-| Projects | 8003 |
-| Search | 8004 |
-| Payments | 8005 |
-| Messaging | 8006 |
-| Notifications | 8007 |
-| Admin | 8008 |
-| Analytics | 8009 |
-
-## 11) Troubleshooting
-
-- Docker chưa chạy → Mở Docker Desktop trước, đợi chạy ổn định rồi chạy script.
-- Port 80 bị chiếm → Tắt service khác dùng port 80, hoặc đổi port trong `docker-compose.local.yml` + `nginx/nginx.conf`.
-- Ngrok không có → Tải `ngrok.exe` về đặt ở thư mục gốc dự án, hoặc cài qua Chocolatey.
-- Xem logs:
-  ```powershell
-  docker-compose -f docker-compose.local.yml logs -f
-  ```
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@codedesign.com` | `admin123` |
+| Freelancer | `freelancer1@codedesign.com` | `freelancer123` |
+| Client | `client1@codedesign.com` | `client123` |
 
 ---
 
-Nếu bạn chỉ cần “mỗi lần mở máy chạy nhanh”, dùng:
+## Serving the Frontend
+
+### Option 1 — Docker / Nginx (Recommended)
+
+The `frontend/public` directory is automatically mounted into the Nginx container and served at `http://localhost` when the system starts. No additional steps required.
+
+### Option 2 — Standalone Static Server (No Backend)
+
+If you only need to preview the frontend UI without running backend services:
+
+**Using Node.js:**
+
 ```powershell
-.\scripts\start-all.ps1
-```
-Lúc cần dừng, chạy:
-```powershell
-.\scripts\stop-all.ps1
+cd frontend/public
+npx serve -l 8080 .
 ```
 
+**Using Python:**
+
+```powershell
+cd frontend/public
+python -m http.server 8080
+```
+
+Open `http://localhost:8080` in your browser.
+
+> **Warning:** API-dependent features will not function without the full Docker stack running. Most pages require the backend APIs proxied through Nginx at `http://localhost`.
+
+---
+
+## Port Reference
+
+| Service | Port |
+|---|---|
+| Nginx (Frontend + Reverse Proxy) | `80` |
+| Auth Service | `8001` |
+| User Service | `8002` |
+| Project Service | `8003` |
+| Search Service | `8004` |
+| Payments Service | `8005` |
+| Messaging Service | `8006` |
+| Notifications Service | `8007` |
+| Admin Service | `8008` |
+| Analytics Service | `8009` |
+
+---
+
+## Troubleshooting
+
+| Symptom | Resolution |
+|---|---|
+| **Docker containers fail to start** | Open Docker Desktop and wait for it to reach a running state before executing scripts. |
+| **Port 80 already in use** | Stop any service occupying port 80, or update the port mapping in `docker-compose.local.yml` and `nginx/nginx.conf`. |
+| **Ngrok not found** | Place `ngrok.exe` in the project root, or install via Chocolatey: `choco install ngrok`. |
+| **API calls failing** | Confirm all containers are healthy with `.\scripts\check-status.ps1` and review logs with `docker-compose -f docker-compose.local.yml logs -f`. |
+
+---
+
+## Quick Reference
+
+```powershell
+# Start everything
+.\scripts\start-all.ps1
+
+# Stop everything
+.\scripts\stop-all.ps1
+
+# Check health
+.\scripts\check-status.ps1
+```
+
+---
+
+*For questions or contributions, please open an issue or submit a pull request.*

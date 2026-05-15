@@ -249,7 +249,7 @@
             const lastViewed = localStorage.getItem('lastViewedNotifications');
             
             // Get all unread notifications
-            const resp = await fetch(`${API_BASE}/api/v1/notifications?unread_only=true`, {
+            const resp = await fetch(`${API_BASE}/api/v1/notifications/?unread_only=true`, {
                 headers: { 'Authorization': `Bearer ${getToken()}` }
             });
             if (!resp.ok) return;
@@ -287,7 +287,7 @@
             // Get last viewed timestamp
             const lastViewed = localStorage.getItem('lastViewedMessages');
             
-            const resp = await fetch(`${API_BASE}/api/v1/chat/conversations`, {
+            const resp = await fetch(`${API_BASE}/api/v1/chat/conversations/`, {
                 headers: { 'Authorization': `Bearer ${getToken()}` }
             });
             if (!resp.ok) return;
